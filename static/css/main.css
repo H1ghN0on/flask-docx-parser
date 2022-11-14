@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  padding: 0;
+}
+
+.error {
+  color: red;
+}
+
+.order-select.active,
+.btn-generate.active,
+.table.active {
+  opacity: 1;
+  display: table;
+  visibility: visible;
+}
+
+.order-select,
+.btn-generate,
+.table {
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+}
+
+#generate-label {
+  display: none;
+}
+
+#generate-label.active {
+  display: block;
+}

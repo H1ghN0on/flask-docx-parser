@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block head %}
+
+
+
+{% endblock %}
+
+{% block body %}
+
+
+
+<div class="container mt-5">
+
+    <form id="fileUploadForm" method="POST" enctype="multipart/form-data">
+        <label id="potentialError" for="formFileSm" class="form-label {{'error' if error }}">
+            Загрузите Word документ
+        </label>
+        <input accept=".doc,.docx" name="file" class="form-control form-control-sm" id="formFileSm" type="file">
+        <button type="submit" class="btn btn-primary mt-3 mx-auto" id="submit">Продолжить</button>
+    </form>
+
+
+    <select id="order-select" class="form-select order-select mt-5">
+
+    </select>
+    <table id="table" class="table mt-3">
+
+    </table>
+
+    <div class="mt-3 active">
+        <div id="generate-label" class="error">Ошибка случилась</div>
+        <button type="submit" id="btn-generate" class="btn btn-generate btn-primary mt-1">Сгенерировать</button>
+    </div>
+
+</div>
+
+
+<script type="text/javascript">
+    const fileInput = document.getElementById('formFileSm');
+    const submitBtn = document.getElementById('submit');
+    const fileUploadForm = document.getElementById('fileUploadForm');
+    const potentialError = document.getElementById("potentialError");
+    const table = document.getElementById("table");
+    const orderSelect = document.getElementById("order-select");
+    const generateBtn = document.getElementById("btn-generate");
+    const generateLabel = document.getElementById("generate-label");
+
+    let brokenOrders = [];
+    let orders = [];
+    let orderIds = [];
+    let currentOrder = -1;
+
+    const fillTable = (orders, currentOrder, brokenOrders) => {
+        //id, name, items: {cards, postcards, ids, sets, order}
+
+        table.innerHTML = "";
+        function addCell(tr, text) {
+            var td = tr.insertCell();
+            td.innerHTML = text;
+            return td;
+        }
+
+        function addCellWithInput(tr, name, order) {
+            const thatOrder = orders.findIndex(item => item.id === order.id);
+            const thatItem = order.items.findIndex(item => item.order == currentOrder);
+
+
+            var td = tr.insertCell();
+            var input = document.createElement('input');
+            input.setAttribute('type', 'number');
+            input.setAttribute('value', order.items[thatItem][name]);
+            input.setAttribute('min', 0);
+            input.addEventListener('change', (e) => {
+                orders[thatOrder].items[thatItem][name] = +e.target.value;
+            })
+            input.classList.add("form-control");
+            td.appendChild(input);
+            return td;
+        }
+
+
+        var thead = table.createTHead();
+        var headerRow = thead.insertRow();
+        addCell(headerRow, 'id');
+        addCell(headerRow, 'Имя');
+        addCell(headerRow, 'Карты');
+        addCell(headerRow, 'Открытки');
+        addCell(headerRow, 'Айди');
+        addCell(headerRow, 'Сеты');
+
+        for (let order of orders) {
+            for (let item of order.items) {
+                if (item.order == currentOrder) {
+                    const row = table.insertRow();
+                    addCell(row, order.id)
+                    addCell(row, order.name)
+                    addCellWithInput(row, "cards", order)
+                    addCellWithInput(row, "postcards", order)
+                    addCellWithInput(row, "ids", order)
+                    addCellWithInput(row, "sets", order)
+                }
+            }
+        }
+
+        for (let order of brokenOrders) {
+            if (order.order == currentOrder) {
+                const row = table.insertRow();
+                addCell(row, "Отменённый заказ")
+                addCell(row, order.item)
+            }
+        }
+    }
+
+    const fillSelect = (orderIds) => {
+        for (orderId of orderIds) {
+            orderSelect.add(new Option("Заказ №" + orderId, orderId));
+        }
+    }
+
+
+    submitBtn.disabled = true;
+    fileInput.addEventListener("change", (e) => {
+        if (e.target.value) {
+            submitBtn.disabled = false;
+        }
+    })
+
+    orderSelect.addEventListener("change", (e) => {
+        fillTable(orders, e.target.value, brokenOrders);
+    })
+
+
+    fileUploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault()
+
+        const data = new FormData()
+        data.append('file', fileInput.files[0])
+        const res = await fetch("/parse", {
+            method: 'POST',
+            body: data
+        })
+        const json = await res.json();
+        if (!res.ok) {
+            potentialError.textContent = json.error;
+            potentialError.classList.add("error");
+        } else {
+            potentialError.textContent = "Загружен"
+            potentialError.classList.remove("error");
+
+            orders = json.orders;
+            orderIds = json.orderIds
+            brokenOrders = json.brokenOrders
+
+            console.log(brokenOrders)
+            fillSelect(orderIds);
+            fillTable(orders, orderIds[0], brokenOrders);
+
+            table.classList.add("active");
+            orderSelect.classList.add("active");
+            generateBtn.classList.add("active");
+        }
+    })
+
+    generateBtn.addEventListener("click", async () => {
+        generateLabel.classList.remove("active");
+        const specificOrders = []
+        const usualOrders = orders.filter(order => {
+            if (order.id === -1) specificOrders.push(order)
+            return order.id !== -1
+        });
+
+
+        const res = await fetch("/generate", {
+            method: 'POST',
+            body: JSON.stringify({
+                orders: usualOrders, specificOrders, brokenOrders
+            }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+        if (res.ok) {
+            const blob = await res.blob();
+            var file = window.URL.createObjectURL(blob);
+            window.location.assign(file);
+        } else {
+            const error = res.json();
+            generateLabel.textContent = error
+            generateLabel.classList.add("active");
+
+        }
+
+
+
+    })
+
+
+</script>
+
+{% endblock %}
