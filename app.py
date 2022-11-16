@@ -16,18 +16,24 @@ def addOrderer(person, orders):
     #[id1488228|Валерий Жмышенко]
 
     info = person.split("|")
-
-
-    name = info[1][:-1] if len(info) == 2 else info[0][:-1]
-    id = info[0][1:] if len(info) == 2 else -1
     
+    name = ""
+    id = -1
+
+    if info[0].startswith("[id"):
+        id = info[0].replace('[', '')
+        name = info[1].replace(']', '') 
+    else:
+        name = info[0].replace(' -', '')
+    
+
+
     dictPerson = {
         'id': id,
         'name': name,
         'items': []
     }
 
-    
     existed = list(filter(lambda person: person['id'] == id if id != -1 else person['name'] == name, orders))
     if (not existed):
         orders.append(dictPerson)
@@ -38,13 +44,22 @@ def addOrderer(person, orders):
 
 def addOrder(order, orderIndex, currentOrder, orders):
     order = " ".join(order).split(", ")
-            
+
+    formatedOrder = []
+    forbiddenCharacters = ['-', '[', ']', '!', '—', " "]
+
+    for item in order:
+        newItem = item.translate({ord(x): '' for x in forbiddenCharacters})
+        formatedOrder.append(newItem)    
+
+    print(formatedOrder)
+
     cards = 0
     postcards = 0
     ids = 0
     sets = 0
 
-    for part in order:
+    for part in formatedOrder:
         
         if (re.match('^\d+[kKкК]$', part)):
             cards += int(part[:-1])

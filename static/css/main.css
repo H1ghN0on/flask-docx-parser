@@ -8,20 +8,32 @@ body {
   color: red;
 }
 
+.submition {
+  display: flex;
+  justify-content: start;
+}
+
+.loading.active,
 .order-select.active,
 .btn-generate.active,
 .table.active {
   opacity: 1;
-  display: table;
+  display: table !important;
   visibility: visible;
 }
 
+.loading.active {
+  display: inline-block !important;
+  position: relative;
+}
+
+.loading,
 .order-select,
 .btn-generate,
 .table {
   opacity: 0;
   visibility: hidden;
-  display: none;
+  display: none !important;
 }
 
 #generate-label {

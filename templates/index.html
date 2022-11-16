@@ -17,7 +17,9 @@
             Загрузите Word документ
         </label>
         <input accept=".doc,.docx" name="file" class="form-control form-control-sm" id="formFileSm" type="file">
-        <button type="submit" class="btn btn-primary mt-3 mx-auto" id="submit">Продолжить</button>
+
+        <button type="submit" class="btn btn-primary mt-2 mx-auto" id="submit">Продолжить</button>
+        <div id="loading" class="loading spinner-border spinner-border-sm" role="status"></div>
     </form>
 
 
@@ -33,6 +35,7 @@
         <button type="submit" id="btn-generate" class="btn btn-generate btn-primary mt-1">Сгенерировать</button>
     </div>
 
+
 </div>
 
 
@@ -45,6 +48,7 @@
     const orderSelect = document.getElementById("order-select");
     const generateBtn = document.getElementById("btn-generate");
     const generateLabel = document.getElementById("generate-label");
+    const loadingSpinner = document.getElementById("loading");
 
     let brokenOrders = [];
     let orders = [];
@@ -118,9 +122,24 @@
         }
     }
 
+    const deactivateGenerated = () => {
+        table.classList.remove("active");
+        orderSelect.classList.remove("active");
+        generateBtn.classList.remove("active");
+    }
+
+    const activateGenerated = () => {
+        table.classList.add("active");
+        orderSelect.classList.add("active");
+        generateBtn.classList.add("active");
+    }
+
 
     submitBtn.disabled = true;
     fileInput.addEventListener("change", (e) => {
+        deactivateGenerated()
+        potentialError.textContent = "Загрузите Word документ"
+        potentialError.classList.remove("error");
         if (e.target.value) {
             submitBtn.disabled = false;
         }
@@ -134,6 +153,9 @@
     fileUploadForm.addEventListener("submit", async (e) => {
         e.preventDefault()
 
+
+        deactivateGenerated()
+        loadingSpinner.classList.add('active')
         const data = new FormData()
         data.append('file', fileInput.files[0])
         const res = await fetch("/parse", {
@@ -141,6 +163,7 @@
             body: data
         })
         const json = await res.json();
+        loadingSpinner.classList.remove('active')
         if (!res.ok) {
             potentialError.textContent = json.error;
             potentialError.classList.add("error");
@@ -151,14 +174,10 @@
             orders = json.orders;
             orderIds = json.orderIds
             brokenOrders = json.brokenOrders
-
-            console.log(brokenOrders)
             fillSelect(orderIds);
             fillTable(orders, orderIds[0], brokenOrders);
 
-            table.classList.add("active");
-            orderSelect.classList.add("active");
-            generateBtn.classList.add("active");
+            activateGenerated()
         }
     })
 
