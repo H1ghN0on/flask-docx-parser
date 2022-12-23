@@ -52,7 +52,6 @@ def addOrder(order, orderIndex, currentOrder, orders):
         newItem = item.translate({ord(x): '' for x in forbiddenCharacters})
         formatedOrder.append(newItem)    
 
-    print(formatedOrder)
 
     cards = 0
     postcards = 0
@@ -69,7 +68,7 @@ def addOrder(order, orderIndex, currentOrder, orders):
             ids += int(part[:-1])
         if (re.match('^\d+[sSсС]$', part)):
             sets += int(part[:-1])
-        
+   
     newOrder = {
         'cards': cards,
         'postcards': postcards,
@@ -103,16 +102,21 @@ def parse():
 
         
                 for paragraph in paras:
-                   
+
                     if (paragraph.text): 
-                       
-                        text = paragraph.text
+                        text = paragraph.text.strip()
+                        
                         text = ' '.join(text.split())
+                        if all(x.isspace() for x in text):
+                            continue
                         if (re.match('^\d+[📦]', text) or text.startswith("!!") or text.startswith("#") or text.startswith("инд #") or not text[0].isdigit()):
                             if text.startswith("#"):
+                                
                                 currentOrder = text[1:]
                                 currentOrder = currentOrder.split(" ")[0]
+
                                 orderIds.add(int(currentOrder))
+                                
                             elif text.startswith("инд #"):
                                 currentOrder = text[5:]
                                 orderIds.add(int(currentOrder))
@@ -126,6 +130,7 @@ def parse():
                         else:
 
                             position, person, person2, *order = text.split(" ")
+
                             if (not person.endswith("]")):
                                 person = person + " " + person2
                             orderIndex = addOrderer(person, orders)
@@ -135,6 +140,7 @@ def parse():
             except BadZipFile:
                 return {'error': "Не Word документ"}, 500
             except Exception as e:
+                
                 return {'error': "Плохо отформатированный документ"}, 500
         else: 
             return {'error': "Файл не загружен"}, 500
